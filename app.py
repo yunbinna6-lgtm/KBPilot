@@ -11,7 +11,7 @@ import markdown
 def typing_effect(text):
     for word in text.split(" "):
         yield word + " "
-        time.sleep(0.04) # 0.04초마다 단어를 출력 (숫자를 줄이면 더 빨라집니다)
+        time.sleep(0.04)
 
 # 1. API 세팅
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -24,11 +24,9 @@ st.set_page_config(page_title="KB LIFE OS: Financial Pilot", page_icon="✈️",
 # ==========================================
 st.markdown("""
 <style>
-    /* 1. 페이드인 애니메이션 */
     .fade-in { animation: fadeIn 0.6s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 2. CTA 버튼(Primary) 디자인 강조 (유지) */
     button[kind="primary"] {
         font-size: 1.1rem !important;
         font-weight: bold !important;
@@ -47,7 +45,6 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* 3. 활성화된 탭 명확히 표시 (✨ 다크/라이트 자동 반응) */
     button[data-baseweb="tab"][aria-selected="true"] {
         border-bottom: 4px solid #FFBC00 !important;
         font-weight: 800 !important;
@@ -55,7 +52,6 @@ st.markdown("""
         background-color: transparent !important; 
     }
 
-    /* 4. 완벽한 채팅창(검색창) 스타일링 (✨ 다크/라이트 자동 반응) */
     div[data-testid="stTextInput"] input {
         background-color: var(--secondary-background-color) !important; 
         color: var(--text-color) !important; 
@@ -73,7 +69,6 @@ st.markdown("""
         font-size: 1.1rem !important;
     }
     
-    /* 5. 카드 리프트 (Card Lift) (✨ 다크/라이트 자동 반응) */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease !important;
         background-color: var(--background-color) !important; 
@@ -85,7 +80,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- API 함수 모음 (기존과 동일) ---
+# --- API 함수 모음 ---
 @st.cache_data(ttl=86400)
 def get_bok_base_rate():
     bok_api_key = st.secrets["BOK_API_KEY"]
@@ -118,7 +113,6 @@ def get_fss_deposit_products():
         return fallback_df
     except: 
         return fallback_df
-
 
 @st.cache_data(ttl=86400)
 def get_fss_saving_products():
@@ -157,12 +151,13 @@ def get_fss_loan_products():
 # --- 상태 초기화 ---
 if 'goal' not in st.session_state: st.session_state.goal = ""
 if 'dna' not in st.session_state: st.session_state.dna = "안정형 (안정적 자산 배분)"
+if 'pre_prompt' not in st.session_state: st.session_state.pre_prompt = ""
 
 # ==========================================
-# 🚪 진입 화면 (Landing Page): 클로드 완벽 오마주
+# 🚪 진입 화면 (Landing Page) + 🎯 목표 퀵 치즈
 # ==========================================
 if not st.session_state.goal:
-    for _ in range(4):
+    for _ in range(3):
         st.write("")
     
     _, center_col, _ = st.columns([1, 2, 1])
@@ -174,10 +169,24 @@ if not st.session_state.goal:
         st.write("") 
         
         st.markdown("<h2 style='text-align: center; color: var(--text-color); font-weight: 800;'>✈️ 안녕하세요 KB AI Pilot입니다.</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #888; font-size: 1.1rem; margin-bottom: 2rem;'>당신은 목적지만 정하세요. 나머지는 KB AI Pilot이 관리합니다.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #888; font-size: 1.1rem; margin-bottom: 1.5rem;'>당신은 목적지만 정하세요. 나머지는 KB AI Pilot이 관리합니다.</p>", unsafe_allow_html=True)
         
+        # 🎯 [UI 추가] 목표 퀵 치즈 (Quick Chips) 버튼
+        st.markdown("<p style='text-align: center; font-size: 0.95rem; font-weight: bold; color: #555;'>✨ 추천 목적지를 클릭해보세요!</p>", unsafe_allow_html=True)
+        qc1, qc2, qc3 = st.columns(3)
+        if qc1.button("🏠 3년 뒤 내 집 마련", use_container_width=True):
+            st.session_state.goal = "3년 뒤 내 집 마련"
+            st.rerun()
+        if qc2.button("💰 시드머니 1천만 원", use_container_width=True):
+            st.session_state.goal = "시드머니 1천만 원 모으기"
+            st.rerun()
+        if qc3.button("🛡️ 은퇴 후 자산 방어", use_container_width=True):
+            st.session_state.goal = "은퇴 후 안전 자산 배분"
+            st.rerun()
+            
+        st.write("")
         with st.form("landing_form", clear_on_submit=False):
-            user_input_goal = st.text_input("목적지 입력", placeholder="오늘 어떤 목표를 향해 비행할까요? (예: 3년 뒤 내 집 마련)", label_visibility="collapsed")
+            user_input_goal = st.text_input("목적지 입력", placeholder="또는 직접 목표를 입력하세요 (예: 3년 뒤 내 집 마련)", label_visibility="collapsed")
             submitted = st.form_submit_button("나의 재무 경로 탐색하기 ✈️", type="primary", use_container_width=True)
             if submitted and user_input_goal:
                 st.session_state.goal = user_input_goal
@@ -209,6 +218,21 @@ else:
         with st.container(border=True):
             st.markdown("##### 🧬 나의 Finance DNA")
             st.session_state.dna = st.radio("투자 성향", ["안정형 (안정적 자산 배분)", "도전형 (고수익 추구)", "즉흥형 (단기 투자 위주)"], label_visibility="collapsed")
+            
+        st.divider()
+        st.markdown("### 🔍 화면 접근성 설정")
+        # 🔍 [UX 추가] 어르신 모드 (큰 글씨) 토글
+        senior_mode = st.toggle("어르신 모드 (큰 글씨 🔍)", value=False)
+        if senior_mode:
+            st.markdown("""
+            <style>
+                html, body, [class*="css"] { font-size: 1.2rem !important; }
+                h1 { font-size: 2.3rem !important; }
+                h2 { font-size: 2rem !important; }
+                h3 { font-size: 1.7rem !important; }
+                p, span, label, div { font-size: 1.15rem !important; }
+            </style>
+            """, unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(["🧭 Auto Pilot (일상 조언)", "📊 Financial Twin (미래 시뮬레이터)", "🚨 Recovery Mode (위기 복구)"])
 
@@ -227,43 +251,65 @@ else:
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
             
+        # 💬 [UI 추가] 추천 대화 예시칩
+        st.markdown("💡 **이런 질문을 빠르게 던져보세요:**")
+        ex1, ex2, ex3 = st.columns(3)
+        if ex1.button("💸 보너스 500만 원 어디에?", use_container_width=True):
+            st.session_state.pre_prompt = "보너스 500만 원이 생겼는데 어디에 투자할까요?"
+        if ex2.button("🌱 매달 30만 원 적금 추천", use_container_width=True):
+            st.session_state.pre_prompt = "사회초년생인데 매달 30만 원씩 모으기 좋은 적금 추천해줘"
+        if ex3.button("🏠 전세대출 상품 알려줘", use_container_width=True):
+            st.session_state.pre_prompt = "전세 자금 마련을 위해 받을 수한 대출 상품 알려줘"
+            
+        st.divider()
+
         for role, message in st.session_state.chat_history:
             with st.chat_message(role, avatar="👤" if role == "user" else "✈️"):
                 st.markdown(message)
         
+        default_val = st.session_state.pre_prompt if st.session_state.pre_prompt else ""
+        
         if user_input := st.chat_input("💬 현재 고민을 자유롭게 물어보세요 (예: 보너스 500만 원 어디에 쓸까요?)"):
-            
+            st.session_state.pre_prompt = "" # 초기화
             st.session_state.chat_history.append(("user", user_input))
             with st.chat_message("user", avatar="👤"):
                 st.markdown(user_input)
                 
             with st.chat_message("ai", avatar="✈️"):
-                with st.spinner('Pilot이 리스크와 현금흐름을 분석 중입니다...'):
-                    prompt = f"""
-                    당신은 KB국민은행의 최상위 리스크 관리 전문가이자 VIP 전담 AI PB입니다.
-                    고객의 상황을 바탕으로 냉철하고 실무적인 금융 솔루션을 제안하세요.
+                # ⏳ [UX 추가] 단계별 실시간 로딩 Status UX
+                with st.status("✈️ KB AI Pilot이 비행 경로를 계산 중입니다...", expanded=True) as status:
+                    st.write("🔍 고객 금융 목적지 및 DNA 검토 중...")
+                    time.sleep(0.4)
+                    st.write("🏦 예금·적금·대출 실시간 상품 데이터 대조 중...")
+                    time.sleep(0.4)
+                    st.write("🛡️ 리스크 헷징 및 최적 솔루션 도출 완료!")
+                    status.update(label="✨ 맞춤형 리스크 솔루션 수립 완료!", state="complete", expanded=False)
 
-                    [고객 데이터]
-                    - 최종 목표: {st.session_state.goal}
-                    - 투자 성향 (DNA): {st.session_state.dna}
-                    - 현재 직면한 고민: {user_input}
-                    - 추천 가능 상품: - 추천 가능 상품: {available_products_list}
+                prompt = f"""
+                당신은 KB국민은행의 최상위 리스크 관리 전문가이자 VIP 전담 AI PB입니다.
+                고객의 상황을 바탕으로 냉철하고 실무적인 금융 솔루션을 제안하세요.
 
-                    [답변 출력 형식 (반드시 아래 마크다운 형식을 정확히 지킬 것)]
-                    1. 📊 추천 신뢰도: [60~99 사이 숫자]%
-                    
-                    ---
-                    ## 🎁 추천 상품 : :orange[**[단 1개의 상품명]**]
-                    ---
-                    
-                    2. 💡 리스크 기반 맞춤형 조언: (단순 위로가 아닌, 현금흐름과 리스크 헷징 관점에서의 전략)
-                    
-                    3. 🔍 XAI 분석 근거: (수익성 방어, 리스크 관리, 목표 달성 기여도 측면)
-                    """
+                [고객 데이터]
+                - 최종 목표: {st.session_state.goal}
+                - 투자 성향 (DNA): {st.session_state.dna}
+                - 현재 직면한 고민: {user_input}
+                - 추천 가능 상품: {available_products_list}
 
-                    reply = model.generate_content(prompt).text
-                    st.write_stream(typing_effect(reply))
-                    st.session_state.chat_history.append(("ai", reply))
+                [답변 출력 형식 (반드시 아래 마크다운 형식을 정확히 지킬 것)]
+                1. 📊 추천 신뢰도: [60~99 사이 숫자]%
+                
+                ---
+                ## 🎁 추천 상품 : :orange[**[단 1개의 상품명]**]
+                ---
+                
+                2. 💡 리스크 기반 맞춤형 조언: (단순 위로가 아닌, 현금흐름과 리스크 헷징 관점에서의 전략)
+                
+                3. 🔍 XAI 분석 근거: (수익성 방어, 리스크 관리, 목표 달성 기여도 측면)
+                """
+
+                reply = model.generate_content(prompt).text
+                st.write_stream(typing_effect(reply))
+                st.session_state.chat_history.append(("ai", reply))
                     
     # --- 탭 2 ---
     with tab2:
@@ -317,11 +363,11 @@ else:
                 
                 st.altair_chart(chart, use_container_width=True)
                 
+                # 🛡️ [UI 추가] 직관적인 리스크 뱃지 카드 디자인
                 col1, col2, col3 = st.columns(3)
-                
-                col1.success(f"🏠 **{a_name}**\n\n최종 예상 자산: **{int(df_chart[a_name].iloc[-1]):,}만 원**\n\n🛡️ 과거 최대 낙폭(MDD): **0.0%**\n(원금 보장형)")
-                col2.warning(f"🚀 **{b_name}**\n\n최종 예상 자산: **{int(df_chart[b_name].iloc[-1]):,}만 원**\n\n⚠️ 과거 최대 낙폭(MDD): **-24.5%**\n(시장 충격 시 원금 손실 리스크)")
-                col3.error(f"📉 **{c_name}**\n\n최종 예상 자산: **{int(df_chart[c_name].iloc[-1]):,}만 원**\n\n💸 치명적 리스크: **현금흐름 붕괴**\n(물가 상승 대비 자산 가치 하락)")
+                col1.success(f"🏠 **{a_name}**\n\n최종 예상 자산: **{int(df_chart[a_name].iloc[-1]):,}만 원**\n\n🛡️ **안전 등급: 낮음 (원금보장)**\n과거 최대 낙폭(MDD): **0.0%**")
+                col2.warning(f"🚀 **{b_name}**\n\n최종 예상 자산: **{int(df_chart[b_name].iloc[-1]):,}만 원**\n\n⚠️ **위험 등급: 보통 (시장연동)**\n과거 최대 낙폭(MDD): **-24.5%**")
+                col3.error(f"📉 **{c_name}**\n\n최종 예상 자산: **{int(df_chart[c_name].iloc[-1]):,}만 원**\n\n💸 **위험 등급: 매우 높음**\n치명적 리스크: **현금흐름 붕괴**")
 
 
     # --- 탭 3 ---
@@ -362,7 +408,6 @@ else:
                         
                         st.session_state.recovery_report = reply
 
-        # 👉 수정 완료: 다운로드 기능이 완벽하게 if문 안쪽으로 쏙 들어왔습니다!
         if st.session_state.recovery_report:
             st.divider() 
 
