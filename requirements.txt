@@ -1,0 +1,7 @@
+streamlit
+google-generativeai
+pandas
+requests
+FinanceDataReader
+altair
+markdown
