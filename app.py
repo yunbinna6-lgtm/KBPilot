@@ -119,6 +119,41 @@ def get_fss_deposit_products():
     except: 
         return fallback_df
 
+
+@st.cache_data(ttl=86400)
+def get_fss_saving_products():
+    fss_api_key = st.secrets["FSS_API_KEY"]
+    fallback_df = pd.DataFrame({'금융회사': ['국민은행', '국민은행'], '상품명': ['KB국민행복적금', 'KB 특화적금']})
+    if fss_api_key == "4197a940076c6383b6afa6abb2912da5": return fallback_df
+    try:
+        url = f"http://finlife.fss.or.kr/finlifeapi/savingProductsSearch.json?auth={fss_api_key}&topFinGrpNo=020000&pageNo=1"
+        data = requests.get(url).json()
+        if 'result' in data and 'baseList' in data['result']:
+            df = pd.DataFrame(data['result']['baseList'])[['kor_co_nm', 'fin_prdt_nm']]
+            df.columns = ['금융회사', '상품명']
+            kb_df = df[df['금융회사'].str.contains('국민은행')].head(3)
+            return kb_df if not kb_df.empty else df.head(3)
+        return fallback_df
+    except: 
+        return fallback_df
+
+@st.cache_data(ttl=86400)
+def get_fss_loan_products():
+    fss_api_key = st.secrets["FSS_API_KEY"]
+    fallback_df = pd.DataFrame({'금융회사': ['국민은행', '국민은행'], '상품명': ['KB 직장인든든 신용대출', 'KB 주택담보대출']})
+    if fss_api_key == "4197a940076c6383b6afa6abb2912da5": return fallback_df
+    try:
+        url = f"http://finlife.fss.or.kr/finlifeapi/creditLoanProductsSearch.json?auth={fss_api_key}&topFinGrpNo=020000&pageNo=1"
+        data = requests.get(url).json()
+        if 'result' in data and 'baseList' in data['result']:
+            df = pd.DataFrame(data['result']['baseList'])[['kor_co_nm', 'fin_prdt_nm']]
+            df.columns = ['금융회사', '상품명']
+            kb_df = df[df['금융회사'].str.contains('국민은행')].head(3)
+            return kb_df if not kb_df.empty else df.head(3)
+        return fallback_df
+    except: 
+        return fallback_df
+
 # --- 상태 초기화 ---
 if 'goal' not in st.session_state: st.session_state.goal = ""
 if 'dna' not in st.session_state: st.session_state.dna = "안정형 (안정적 자산 배분)"
@@ -180,7 +215,14 @@ else:
     # --- 탭 1 ---
     with tab1:
         st.markdown("#### 🧭 일상 금융 조종석")
-        real_products_df = get_fss_deposit_products()
+        
+        # 3대 금융상품 데이터 불러오기 및 통합
+        df_deposit = get_fss_deposit_products()
+        df_saving = get_fss_saving_products()
+        df_loan = get_fss_loan_products()
+        
+        all_products_df = pd.concat([df_deposit, df_saving, df_loan], ignore_index=True)
+        available_products_list = ', '.join(all_products_df['상품명'].tolist())
         
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
@@ -205,7 +247,7 @@ else:
                     - 최종 목표: {st.session_state.goal}
                     - 투자 성향 (DNA): {st.session_state.dna}
                     - 현재 직면한 고민: {user_input}
-                    - 추천 가능 상품: {', '.join(real_products_df['상품명'].tolist())}
+                    - 추천 가능 상품: - 추천 가능 상품: {available_products_list}
 
                     [답변 출력 형식 (반드시 아래 마크다운 형식을 정확히 지킬 것)]
                     1. 📊 추천 신뢰도: [60~99 사이 숫자]%
