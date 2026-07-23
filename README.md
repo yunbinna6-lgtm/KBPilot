@@ -1,3 +1,4 @@
+🔗 **[KB LIFE OS: Financial Pilot 웹 서비스 바로가기](https://kb-pilot-2kzvyhxd9emqvoww5rwynr.streamlit.app)**
 # ✈️ KB LIFE OS: Financial Pilot
 
 > **2026 KB AI Challenge 출품작**
